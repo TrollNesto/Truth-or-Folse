@@ -1,46 +1,95 @@
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
-    <meta charset="UTF-8"><title>TRUTH-OR-FOLSE</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TRUTH-NETWORK</title>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;700;800&display=swap" rel="stylesheet">
 </head>
-<body class="bg-black text-white font-sans">
+<body class="bg-black text-white font-['Assistant']">
     <div id="root"></div>
     <script type="text/babel">
         const { useState } = React;
+
         function App() {
             const [claim, setClaim] = useState('');
             const [results, setResults] = useState(null);
             const [loading, setLoading] = useState(false);
 
             const check = async () => {
+                if (!claim.trim()) return;
                 setLoading(true);
+                setResults(null);
                 try {
                     const res = await fetch('/api/verify', {
                         method: 'POST',
-                        body: JSON.stringify({ claim })
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ claim: claim }) // סנכרון השם של המשתנה
                     });
                     const data = await res.json();
-                    setResults(JSON.parse(data.candidates[0].content.parts[0].text));
-                } catch (e) { alert("שגיאה בסריקה"); }
+                    
+                    // שליפת התוכן מהתשובה של Gemini
+                    const rawContent = data.candidates[0].content.parts[0].text;
+                    const parsed = JSON.parse(rawContent);
+                    setResults(parsed);
+                } catch (e) {
+                    console.error(e);
+                    alert("הסריקה הושלמה עם שגיאה בעיבוד הנתונים. נסה שנית.");
+                }
                 setLoading(false);
             };
 
             return (
-                <div className="p-8 max-w-4xl mx-auto">
-                    <h1 className="text-4xl font-black text-blue-500 mb-8 italic">TRUTH-NETWORK</h1>
-                    <textarea value={claim} onChange={e => setClaim(e.target.value)} className="w-full bg-slate-900 border border-slate-700 p-4 rounded-2xl mb-4 h-32" placeholder="הזן טענה..."/>
-                    <button onClick={check} className="w-full py-4 bg-blue-600 rounded-2xl font-bold text-xl">
-                        {loading ? "סורק מקורות..." : "הפעל בדיקה"}
-                    </button>
+                <div className="p-4 md:p-8 max-w-4xl mx-auto">
+                    <header className="text-center mb-12">
+                        <h1 className="text-5xl font-black text-blue-500 italic tracking-tighter shadow-blue-500/20 shadow-2xl">TRUTH-NETWORK</h1>
+                        <p className="text-slate-500 mt-2">ניתוח נתונים וזיהוי מניפולציות AI</p>
+                    </header>
+
+                    <div className="bg-slate-900/50 border border-slate-800 p-6 rounded-[2.5rem] shadow-2xl backdrop-blur-md">
+                        <textarea 
+                            value={claim} 
+                            onChange={e => setClaim(e.target.value)} 
+                            className="w-full bg-black/50 border border-slate-700 p-4 rounded-2xl mb-4 h-32 text-xl outline-none focus:border-blue-500 transition-all text-right" 
+                            placeholder="הזן טענה לבדיקה..."
+                        />
+                        <button 
+                            onClick={check} 
+                            disabled={loading}
+                            className="w-full py-5 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-800 rounded-2xl font-black text-2xl transition-all active:scale-[0.98]"
+                        >
+                            {loading ? "סורק 30 מקורות מידע..." : "הפעל סריקה רוחבית"}
+                        </button>
+                    </div>
+
                     {results && (
-                        <div className="mt-8">
-                            <div className="bg-blue-900/20 p-6 rounded-3xl border border-blue-500/30 mb-6">
-                                <p className="text-xl">{results.executiveSummary}</p>
-                                <div className="mt-4 font-bold text-2xl">פסיקה: {results.verdict}</div>
+                        <div className="mt-12 space-y-8 animate-in fade-in duration-700">
+                            <div className="bg-gradient-to-br from-blue-900/30 to-slate-900 border border-blue-500/30 p-8 rounded-[2.5rem]">
+                                <h2 className="text-blue-400 font-bold mb-4">סיכום מנהלי:</h2>
+                                <p className="text-2xl leading-relaxed">{results.executiveSummary}</p>
+                                <div className="mt-6 inline-block px-6 py-2 bg-white/5 rounded-full border border-white/10 text-xl font-bold">
+                                    פסיקת המערכת: <span className={results.verdict === 'אמת' ? 'text-emerald-400' : 'text-red-400'}>{results.verdict}</span>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-right">
+                                {Object.entries(results.categories).map(([key, list]) => (
+                                    <div key={key} className="space-y-4">
+                                        <h3 className="font-black text-slate-500 border-b border-slate-800 pb-2 text-xs tracking-widest uppercase">
+                                            {key === 'ISRAEL' ? 'מקורות בישראל' : key === 'GLOBAL' ? 'מקורות בעולם' : 'מאגרי מידע'}
+                                        </h3>
+                                        {list.map((s, i) => (
+                                            <div key={i} className="bg-slate-900/40 p-4 rounded-2xl border border-slate-800/50 hover:border-slate-700 transition-all">
+                                                <div className="font-bold text-sm mb-1">{s.name}</div>
+                                                <div className="text-[11px] leading-tight text-slate-400">{s.explanation}</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ))}
                             </div>
                         </div>
                     )}
