@@ -12,7 +12,66 @@
 </head>
 <body class="bg-black text-white font-['Assistant']">
     <div id="root"></div>
+
     <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        function App() {
+            const [claim, setClaim] = useState('');
+            const [results, setResults] = useState(null);
+            const [loading, setLoading] = useState(false);
+
+            const check = async () => {
+                if (!claim.trim()) return;
+                setLoading(true);
+                setResults(null);
+                try {
+                    const res = await fetch('/api/verify', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ claim })
+                    });
+                    const data = await res.json();
+                    setResults(data);
+                } catch (e) {
+                    alert("שגיאה בסריקה");
+                }
+                setLoading(false);
+            };
+
+            return (
+                <div className="max-w-2xl mx-auto p-6">
+                    <h1 className="text-4xl font-bold text-blue-500 mb-8 italic text-center">TRUTH NETWORK</h1>
+                    <div className="bg-gray-900 p-6 rounded-2xl border border-gray-800 shadow-2xl">
+                        <textarea 
+                            className="w-full bg-black border border-gray-700 rounded-xl p-4 text-white h-32 mb-4 focus:border-blue-500 outline-none"
+                            placeholder="הזן טענה לבדיקה..."
+                            value={claim}
+                            onChange={(e) => setClaim(e.target.value)}
+                        />
+                        <button 
+                            onClick={check}
+                            disabled={loading}
+                            className="w-full bg-blue-600 hover:bg-blue-700 p-4 rounded-xl font-bold text-xl transition-all"
+                        >
+                            {loading ? 'סורק מקורות...' : 'הפעל סריקה'}
+                        </button>
+                    </div>
+                    {results && (
+                        <div className="mt-8 p-6 bg-gray-900 rounded-2xl border border-blue-900">
+                            <h2 className="text-2xl font-bold mb-4">{results.verdict}</h2>
+                            <p className="text-gray-300">{results.executiveSummary}</p>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        ReactDOM.render(<App />, document.getElementById('root'));
+    </script>
+</body>
+</html>
+        const { useState, useEffect } = React;
         function App() {
             const [claim, setClaim] = useState('');
             const [results, setResults] = useState(null);
