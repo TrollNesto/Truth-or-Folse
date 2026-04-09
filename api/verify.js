@@ -1,6 +1,6 @@
 export default async function handler(req, res) {
   try {
-    const { claim } = JSON.parse(req.body);
+    const { claim } = req.body;
     const API_KEY = "AIzaSyC-80nD7sFa_RXk_CKmCR8vU34w8jb78r8";
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`, {
       method: 'POST',
