@@ -7,12 +7,23 @@ export default async function handler(req, res) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: `Analyze: "${claim}". Respond ONLY with a raw JSON object (no markdown, no backticks) in Hebrew: {"executiveSummary": "...", "verdict": "...", "categories": {"ISRAEL": [], "GLOBAL": [], "INFO": []}}` }] }]
+        contents: [{ parts: [{ text: `Analyze this claim: "${claim}". Respond ONLY with a raw JSON object (no markdown, no backticks) in Hebrew: {"executiveSummary": "...", "verdict": "...", "categories": {"ISRAEL": [], "GLOBAL": [], "INFO": []}}` }] }]
       })
     });
 
     const data = await response.json();
-    return res.status(200).json(data);
+    
+    // בדיקה אם גוגל החזיר תשובה תקינה
+    if (!data.candidates || !data.candidates[0]) {
+      throw new Error("גוגל לא החזיר תשובה תקינה. בדוק את המפתח שלך.");
+    }
+
+    let textResponse = data.candidates[0].content.parts[0].text;
+    
+    // ניקוי תגיות markdown אם יש כאלו
+    textResponse = textResponse.replace(/```json|```/g, "").trim();
+
+    return res.status(200).json(JSON.parse(textResponse));
   } catch (error) {
     return res.status(500).json({ error: error.message });
   }
